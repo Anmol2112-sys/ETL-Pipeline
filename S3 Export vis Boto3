@@ -1,0 +1,26 @@
+import boto3
+import io
+
+# 1. AWS Output Configuration
+output_file_name = "forecast_predictions_output.csv"
+
+# 2. Convert Predictions to Memory Buffer
+df_output = spark.table("v_forecast_predictions").toPandas()
+csv_buffer = io.StringIO()
+df_output.to_csv(csv_buffer, index=False)
+
+# 3. Initialize Boto3 S3 Client
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=aws_access_key,
+    aws_secret_access_key=aws_secret_key
+)
+
+# 4. Upload Direct to S3
+s3_client.put_object(
+    Bucket=bucket_name,
+    Key=output_file_name,
+    Body=csv_buffer.getvalue()
+)
+
+print(" Phase 5 Complete: Forecast written to AWS S3!")
