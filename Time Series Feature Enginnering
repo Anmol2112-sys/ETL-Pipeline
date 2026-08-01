@@ -1,0 +1,29 @@
+from pyspark.sql import Window
+import pyspark.sql.functions as F
+
+# 1. Pull from staging
+df = spark.table("v_complex_sales")
+
+# 2. Extract Date Features
+df_features = df.withColumn("Year", F.year("Date")) \
+                .withColumn("Month", F.month("Date")) \
+                .withColumn("DayOfWeek", F.dayofweek("Date"))
+
+# 3. Create Rolling Averages (Preventing Data Leakage)
+window_spec_7 = Window.partitionBy("Product_Category").orderBy("Date").rowsBetween(-7, -1)
+window_spec_30 = Window.partitionBy("Product_Category").orderBy("Date").rowsBetween(-30, -1)
+
+df_features = df_features.withColumn("Sales_Lag_7D_Avg", F.avg("Units_Sold").over(window_spec_7)) \
+                         .withColumn("Sales_Lag_30D_Avg", F.avg("Units_Sold").over(window_spec_30))
+
+# 4. Create Target Label (30 days into the future)
+window_lead = Window.partitionBy("Product_Category").orderBy("Date")
+df_features = df_features.withColumn("Target_Next_Month_Units", F.lead("Units_Sold", 30).over(window_lead))
+
+# 5. Handle Nulls & Impute
+df_final_features = df_features.dropna(subset=["Sales_Lag_30D_Avg", "Target_Next_Month_Units"])
+df_final_features = df_final_features.fillna({"Marketing_Spend": 0.0})
+
+# 6. Save to Feature Store View
+df_final_features.createOrReplaceTempView("v_engineered_features")
+print(" Phase 3 Complete: Features engineered.")
