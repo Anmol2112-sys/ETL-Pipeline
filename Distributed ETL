@@ -1,0 +1,9 @@
+# 1. Cast Data Types
+spark_df_cleaned = spark_df.withColumn("Date", to_date(col("Date"))) \
+                           .withColumn("Units_Sold", col("Units_Sold").cast("int")) \
+                           .withColumn("Revenue", col("Revenue").cast("float")) \
+                           .withColumn("Marketing_Spend", col("Marketing_Spend").cast("float"))
+
+# 2. Create an In-Memory Temporary View
+spark_df_cleaned.createOrReplaceTempView("v_complex_sales")
+print(" Phase 2 Complete: ETL applied and data staged in memory.")
