@@ -1,0 +1,24 @@
+import pandas as pd
+from pyspark.sql.functions import col, to_date
+
+# 1. Define AWS Credentials & Paths
+aws_access_key = "AKIA4BD6TTLDNGM2PNxx"
+aws_secret_key = "j03RrvIYZGUuMMCmXmuyJzY1kjcEyQCwMm3rGfxx"
+bucket_name = "anmol-sales-forecasting"
+bucket_region = "ap-south-1" # Update to your exact region
+file_path = f"s3://{bucket_name}/Perfumes_Sales_Data.csv"
+
+# 2. Read directly from S3 securely using Pandas and s3fs
+print("Pulling raw data from AWS S3...")
+df_pandas = pd.read_csv(
+    file_path,
+    storage_options={
+        "key": aws_access_key,
+        "secret": aws_secret_key,
+        "client_kwargs": {"region_name": bucket_region}
+    }
+)
+
+# 3. Convert to PySpark DataFrame
+spark_df = spark.createDataFrame(df_pandas)
+print(" Phase 1 Complete: Data ingested into Spark.")
